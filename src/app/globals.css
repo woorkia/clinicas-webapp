@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+:root {
+  /* Medical Blue Theme - Foundation */
+  --primary: #0ea5e9; /* Sky 500 */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #e0f2fe; /* Sky 100 */
+  --secondary-foreground: #0284c7; /* Sky 600 */
+
+  --background: #f8fafc; /* Slate 50 */
+  --foreground: #0f172a; /* Slate 900 */
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --border: #e2e8f0; /* Slate 200 */
+  --input: #e2e8f0;
+  
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f172a; /* Slate 900 */
+    --foreground: #f8fafc; /* Slate 50 */
+    
+    --card: #1e293b; /* Slate 800 */
+    --card-foreground: #f8fafc;
+    
+    --border: #334155; /* Slate 700 */
+    --input: #334155;
+    
+    --secondary: #1e293b;
+    --secondary-foreground: #38bdf8; /* Sky 400 */
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}

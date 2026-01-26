@@ -1,0 +1,39 @@
+
+// This is the plan for schema.prisma
+// Generator
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Models
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @unique // Essential for WhatsApp identification
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  appointments Appointment[]
+  
+  // Tags/Metadata from ManyChat could go here as JSON or relation
+  tags      String? // Comma separated or JSON
+}
+
+model Appointment {
+  id        String   @id @default(uuid())
+  date      DateTime // Real date/time of the appointment
+  status    String   @default("CONFIRMED") // CONFIRMED, CANCELLED, COMPLETED
+  service   String   // "BMS NAZAR", etc.
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id])
+}
