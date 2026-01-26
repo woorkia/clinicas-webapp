@@ -1,7 +1,12 @@
 import { Download, Plus, Search, Filter } from "lucide-react";
 import { ClientsTable } from "@/components/clients/ClientsTable";
+import { prisma } from "@/lib/prisma";
 
-export default function ClientsPage() {
+export default async function ClientsPage() {
+    const clients = await prisma.client.findMany({
+        orderBy: { createdAt: 'desc' }
+    });
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -44,7 +49,7 @@ export default function ClientsPage() {
 
             {/* Main Table Area */}
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                <ClientsTable />
+                <ClientsTable data={clients} />
             </div>
         </div>
     );

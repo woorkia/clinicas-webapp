@@ -8,8 +8,26 @@ import {
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { prisma } from "@/lib/prisma";
 
-export default function Home() {
+export default async function Home() {
+  // Fetch Real Data
+  const totalAppointments = await prisma.appointment.count();
+  const totalClients = await prisma.client.count();
+
+  const recentAppointments = await prisma.appointment.findMany({
+    take: 5,
+    orderBy: { date: 'asc' },
+    where: {
+      date: {
+        gte: new Date() // Future appointments
+      }
+    },
+    include: {
+      client: true
+    }
+  });
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -33,34 +51,34 @@ export default function Home() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
-          title="Citas Hoy"
-          value="12"
+          title="Citas Totales"
+          value={totalAppointments.toString()}
           icon={Calendar}
-          trend="8%"
+          trend="+1"
           trendUp={true}
           color="blue"
         />
         <StatsCard
           title="Chats Activos"
-          value="5"
+          value="0"
           icon={MessageSquare}
-          trend="2"
+          trend="-"
           trendUp={true}
           color="green"
         />
         <StatsCard
-          title="Nuevos Clientes"
-          value="24"
+          title="Total Clientes"
+          value={totalClients.toString()}
           icon={Users}
-          trend="12%"
+          trend="+1"
           trendUp={true}
           color="purple"
         />
         <StatsCard
           title="Tasa Conversión"
-          value="68%"
+          value="0%"
           icon={TrendingUp}
-          trend="3%"
+          trend="0%"
           trendUp={false}
           color="orange"
         />
@@ -76,28 +94,32 @@ export default function Home() {
               <button className="text-sm text-primary hover:underline font-medium">Ver todas</button>
             </div>
             <div className="divide-y divide-border/50">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-medium">
-                      JP
+              {recentAppointments.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">No hay citas próximas.</div>
+              ) : (
+                recentAppointments.map((app) => (
+                  <div key={app.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-medium uppercase">
+                        {app.client.name.substring(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{app.client.name}</p>
+                        <p className="text-xs text-gray-500">{app.serviceName}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">Juan Pérez</p>
-                      <p className="text-xs text-gray-500">Consulta General • Dr. Smith</p>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
+                        <Clock size={14} />
+                        <span>{new Date(app.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                      <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
+                        <MoreHorizontal size={18} />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-1 rounded-full border border-gray-100">
-                      <Clock size={14} />
-                      <span>10:30 AM</span>
-                    </div>
-                    <button className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-all">
-                      <MoreHorizontal size={18} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
