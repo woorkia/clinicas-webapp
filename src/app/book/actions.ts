@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { createGoogleCalendarEvent } from "@/lib/google-calendar";
 
 export async function createBooking(data: {
     serviceId: number;
@@ -61,7 +62,24 @@ export async function createBooking(data: {
 
         console.log("Appointment created:", appointment.id);
 
-        // 4. Revalidate paths so the admin panel updates immediately
+        // 4. Sync with Google Calendar
+        // We do this asynchronously (fire and forget) or await it. 
+        // Since we want to ensure it's logged, we'll await but catch errors inside the helper.
+        try {
+            await createGoogleCalendarEvent({
+                serviceName: data.serviceName,
+                clientName: data.clientName,
+                clientPhone: data.clientPhone,
+                date: appointmentDate,
+                durationMinutes: durationValue,
+                notes: data.notes
+            });
+        } catch (calendarError) {
+            // Just to be extra safe, though helper handles it.
+            console.error("Calendar sync failed (non-fatal):", calendarError);
+        }
+
+        // 5. Revalidate paths so the admin panel updates immediately
         revalidatePath('/(admin)/calendar');
         revalidatePath('/(admin)/dashboard');
         revalidatePath('/(admin)/clients');
