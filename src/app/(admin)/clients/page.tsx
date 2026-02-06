@@ -1,4 +1,5 @@
 import { Download, Plus, Search, Filter } from "lucide-react";
+export const dynamic = 'force-dynamic';
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { prisma } from "@/lib/prisma";
 
