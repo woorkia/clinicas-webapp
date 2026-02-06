@@ -48,6 +48,22 @@ export async function createBooking(data: {
         const appointmentDate = new Date(data.date);
         appointmentDate.setHours(hours, minutes, 0, 0);
 
+        // 3.5 CRITICAL: Check if this slot is already taken (prevent double booking)
+        const existingAppointment = await prisma.appointment.findFirst({
+            where: {
+                date: appointmentDate,
+                status: 'CONFIRMED',
+            },
+        });
+
+        if (existingAppointment) {
+            console.log("Slot already booked:", appointmentDate);
+            return {
+                success: false,
+                error: "Este horario ya está reservado. Por favor, elige otra hora."
+            };
+        }
+
         const appointment = await prisma.appointment.create({
             data: {
                 date: appointmentDate,
