@@ -44,7 +44,7 @@ export async function createGoogleCalendarEvent(appointment: {
         const client = await auth.getClient();
         console.log("Auth Client created:", client ? "Yes" : "No");
 
-        const calendar = google.calendar({ version: 'v3', auth: client });
+        const calendar = google.calendar({ version: 'v3', auth: client as any });
 
         // 3. Prepare event times
         const startTime = new Date(appointment.date);
