@@ -16,7 +16,7 @@ export default function BookingPage() {
     const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
     const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
-    // Form State
+    const [settings, setSettings] = useState<any>(null);
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
@@ -25,23 +25,32 @@ export default function BookingPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        const loadServices = async () => {
+        const loadData = async () => {
             setIsLoading(true);
-            const categories = await getCategories();
-            // Flatten categories to get a simple services list for now
-            // or we could show them by category. Let's flatten to keep UI simple for now.
-            const allServices = categories.flatMap((cat: any) =>
-                cat.services.map((s: any) => ({
-                    ...s,
-                    categoryName: cat.name,
-                    price: s.price > 0 ? `${s.price}€` : "Gratis",
-                    duration: `${s.duration} min`
-                }))
-            );
-            setServices(allServices);
-            setIsLoading(false);
+            try {
+                const [categoriesData, settingsData] = await Promise.all([
+                    getCategories(),
+                    import("@/app/admin/automation/actions").then(m => m.getClinicSettings())
+                ]);
+
+                // Flatten categories
+                const allServices = categoriesData.flatMap((cat: any) =>
+                    cat.services.map((s: any) => ({
+                        ...s,
+                        categoryName: cat.name,
+                        price: s.price > 0 ? `${s.price}€` : "Gratis",
+                        duration: `${s.duration} min`
+                    }))
+                );
+                setServices(allServices);
+                setSettings(settingsData);
+            } catch (error) {
+                console.error("Error loading booking data:", error);
+            } finally {
+                setIsLoading(false);
+            }
         };
-        loadServices();
+        loadData();
     }, []);
 
     // Generate dates for the next 28 days to fill the grid
@@ -144,10 +153,15 @@ export default function BookingPage() {
                     <div>
                         {/* Logo / Brand */}
                         <div className="mb-8 mt-2">
-                            {/* Keep logo concise or use text */}
-                            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">Clínica Demo</h2>
+                            {settings?.logoUrl ? (
+                                <img src={settings.logoUrl} alt={settings.name} className="h-10 w-auto mb-4" />
+                            ) : (
+                                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                                    {settings?.name || "Clínica Demo"}
+                                </h2>
+                            )}
                             <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-                                Saca tu mejor sonrisa <br /> con nosotros 😎
+                                {settings?.headerText || "Saca tu mejor sonrisa con nosotros 😎"}
                             </h1>
                         </div>
 
@@ -168,7 +182,7 @@ export default function BookingPage() {
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
                                 <MapPin size={20} className="text-gray-400" />
-                                <span className="text-sm font-medium">Valencia, Calle Flores n3</span>
+                                <span className="text-sm font-medium">{settings?.address || "Valencia, Calle Flores n3"}</span>
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
                                 <Globe size={20} className="text-gray-400" />
@@ -178,7 +192,7 @@ export default function BookingPage() {
                     </div>
 
                     <div className="mt-8 text-xs text-gray-400">
-                        © 2026 Clínica Demo. Todos los derechos reservados.
+                        © 2026 {settings?.name || "Clínica Demo"}. Todos los derechos reservados.
                     </div>
                 </div>
 
