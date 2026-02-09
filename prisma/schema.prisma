@@ -61,3 +61,13 @@ model Appointment {
   
   notes     String?
 }
+model ClinicSettings {
+  id            Int      @id @default(1)
+  name          String   @default("Clínica Demo")
+  logoUrl       String?
+  address       String   @default("Calle Ejemplo 123")
+  phone         String   @default("+34 600 000 000")
+  assistantName String   @default("Ana (IA Clínica)")
+  isBotActive   Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
+}

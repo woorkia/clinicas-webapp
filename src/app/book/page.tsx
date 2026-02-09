@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, MapPin, Globe, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon } from "lucide-react";
+import { Clock, MapPin, Globe, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { createBooking, getAvailableSlots } from "./actions";
+import { getCategories } from "@/app/admin/automation/actions";
 
 export default function BookingPage() {
+    const [isLoading, setIsLoading] = useState(true);
     const [step, setStep] = useState(1);
+    const [services, setServices] = useState<any[]>([]);
     const [selectedService, setSelectedService] = useState<any | null>(null);
     const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
@@ -21,12 +24,25 @@ export default function BookingPage() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // Mock services
-    const services = [
-        { id: 1, name: "Consultoría Inicial", duration: "30 min", price: "Gratis" },
-        { id: 2, name: "Higiene Facial Profunda", duration: "60 min", price: "45€" },
-        { id: 3, name: "Masaje Descontracturante", duration: "45 min", price: "50€" },
-    ];
+    useEffect(() => {
+        const loadServices = async () => {
+            setIsLoading(true);
+            const categories = await getCategories();
+            // Flatten categories to get a simple services list for now
+            // or we could show them by category. Let's flatten to keep UI simple for now.
+            const allServices = categories.flatMap((cat: any) =>
+                cat.services.map((s: any) => ({
+                    ...s,
+                    categoryName: cat.name,
+                    price: s.price > 0 ? `${s.price}€` : "Gratis",
+                    duration: `${s.duration} min`
+                }))
+            );
+            setServices(allServices);
+            setIsLoading(false);
+        };
+        loadServices();
+    }, []);
 
     // Generate dates for the next 28 days to fill the grid
     const dates = Array.from({ length: 35 }, (_, i) => {
@@ -95,6 +111,17 @@ export default function BookingPage() {
 
     // --- RENDER HELPERS ---
     const currentMonth = new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="animate-spin text-blue-600" size={48} />
+                    <p className="text-gray-500 font-medium italic">Cargando servicios...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

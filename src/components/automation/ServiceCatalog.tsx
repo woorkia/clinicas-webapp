@@ -1,7 +1,8 @@
 "use client";
 
-import { Plus, Edit2, Trash2, FolderOpen, Save, X, Check } from "lucide-react";
-import { useState } from "react";
+import { Plus, Edit2, Trash2, FolderOpen, Save, X, Check, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getCategories, saveCategory, deleteCategory, saveService, deleteService } from "@/app/admin/automation/actions";
 
 interface Service {
     id: number;
@@ -16,31 +17,9 @@ interface Category {
     services: Service[];
 }
 
-// Initial Mock Data
-const initialCategories: Category[] = [
-    {
-        id: 1,
-        name: "Faciales",
-        services: [
-            { id: 101, name: "BMS NAZAR", duration: 60, price: 80 },
-            { id: 102, name: "Rutinas faciales", duration: 45, price: 50 },
-            { id: 103, name: "Antiaging gear", duration: 90, price: 120 },
-            { id: 104, name: "Doble lifting", duration: 90, price: 150 },
-        ]
-    },
-    {
-        id: 2,
-        name: "Corporales",
-        services: [
-            { id: 201, name: "Factores", duration: 60, price: 70 },
-            { id: 202, name: "Corporales", duration: 60, price: 60 },
-            { id: 203, name: "Estética", duration: 45, price: 45 },
-        ]
-    },
-];
-
 export function ServiceCatalog() {
-    const [categories, setCategories] = useState<Category[]>(initialCategories);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     // Edit States
     const [editingCategory, setEditingCategory] = useState<number | null>(null);
@@ -50,22 +29,32 @@ export function ServiceCatalog() {
     const [tempName, setTempName] = useState("");
     const [tempService, setTempService] = useState<Partial<Service>>({});
 
-    // --- Actions ---
+    useEffect(() => {
+        loadData();
+    }, []);
 
-    const addCategory = () => {
-        const newCat: Category = {
-            // eslint-disable-next-line react-hooks/purity
-            id: Date.now(),
-            name: "Nueva Categoría",
-            services: []
-        };
-        setCategories([...categories, newCat]);
-        startEditCategory(newCat.id, "Nueva Categoría");
+    const loadData = async () => {
+        setIsLoading(true);
+        const data = await getCategories();
+        setCategories(data as any);
+        setIsLoading(false);
     };
 
-    const deleteCategory = (id: number) => {
+    // --- Actions ---
+
+    const handleAddCategory = async () => {
+        const result = await saveCategory(null, "Nueva Categoría");
+        if (result.success) {
+            await loadData();
+        }
+    };
+
+    const handleDeleteCategory = async (id: number) => {
         if (confirm("¿Estás seguro de borrar esta categoría y todos sus servicios?")) {
-            setCategories(categories.filter(c => c.id !== id));
+            const result = await deleteCategory(id);
+            if (result.success) {
+                await loadData();
+            }
         }
     };
 
@@ -74,36 +63,32 @@ export function ServiceCatalog() {
         setTempName(currentName);
     };
 
-    const saveCategory = (id: number) => {
-        setCategories(categories.map(c => c.id === id ? { ...c, name: tempName } : c));
-        setEditingCategory(null);
+    const handleSaveCategory = async (id: number) => {
+        const result = await saveCategory(id, tempName);
+        if (result.success) {
+            setEditingCategory(null);
+            await loadData();
+        }
     };
 
-    const addService = (catId: number) => {
-        const newService: Service = {
-            // eslint-disable-next-line react-hooks/purity
-            id: Date.now(),
+    const handleAddService = async (catId: number) => {
+        const result = await saveService({
             name: "Nuevo Servicio",
             duration: 30,
-            price: 0
-        };
-        setCategories(categories.map(c => {
-            if (c.id === catId) {
-                return { ...c, services: [...c.services, newService] };
-            }
-            return c;
-        }));
-        startEditService(newService); // Automatically enter edit mode
+            price: 0,
+            categoryId: catId
+        });
+        if (result.success) {
+            await loadData();
+        }
     };
 
-    const deleteService = (catId: number, srvId: number) => {
+    const handleDeleteService = async (srvId: number) => {
         if (confirm("¿Borrar servicio?")) {
-            setCategories(categories.map(c => {
-                if (c.id === catId) {
-                    return { ...c, services: c.services.filter(s => s.id !== srvId) };
-                }
-                return c;
-            }));
+            const result = await deleteService(srvId);
+            if (result.success) {
+                await loadData();
+            }
         }
     };
 
@@ -112,20 +97,31 @@ export function ServiceCatalog() {
         setTempService({ ...service });
     };
 
-    const saveService = (catId: number) => {
+    const handleSaveService = async (catId: number) => {
         if (!tempService.name) return;
 
-        setCategories(categories.map(c => {
-            if (c.id === catId) {
-                return {
-                    ...c,
-                    services: c.services.map(s => s.id === editingService ? { ...s, ...tempService } as Service : s)
-                };
-            }
-            return c;
-        }));
-        setEditingService(null);
+        const result = await saveService({
+            id: editingService!,
+            name: tempService.name,
+            duration: tempService.duration || 30,
+            price: tempService.price || 0,
+            categoryId: catId
+        });
+
+        if (result.success) {
+            setEditingService(null);
+            await loadData();
+        }
     };
+
+    if (isLoading) {
+        return (
+            <div className="p-12 flex flex-col items-center justify-center text-gray-500 gap-4">
+                <Loader2 className="animate-spin" size={32} />
+                <p className="text-sm font-medium">Cargando catálogo...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">
@@ -137,13 +133,14 @@ export function ServiceCatalog() {
                     </p>
                 </div>
                 <button
-                    onClick={addCategory}
+                    onClick={handleAddCategory}
                     className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
                 >
                     <Plus size={16} />
                     Nueva Categoría
                 </button>
             </div>
+
 
             <div className="space-y-6">
                 {categories.map((category) => (
@@ -162,7 +159,7 @@ export function ServiceCatalog() {
                                             onChange={(e) => setTempName(e.target.value)}
                                             className="text-sm font-medium px-2 py-1 border border-primary rounded focus:outline-none"
                                         />
-                                        <button onClick={() => saveCategory(category.id)} className="p-1 text-green-600 hover:bg-green-100 rounded">
+                                        <button onClick={() => handleSaveCategory(category.id)} className="p-1 text-green-600 hover:bg-green-100 rounded">
                                             <Check size={16} />
                                         </button>
                                         <button onClick={() => setEditingCategory(null)} className="p-1 text-red-500 hover:bg-red-100 rounded">
@@ -185,13 +182,13 @@ export function ServiceCatalog() {
                                         <button onClick={() => startEditCategory(category.id, category.name)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors" title="Editar Nombre">
                                             <Edit2 size={16} />
                                         </button>
-                                        <button onClick={() => deleteCategory(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Borrar Categoría">
+                                        <button onClick={() => handleDeleteCategory(category.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Borrar Categoría">
                                             <Trash2 size={16} />
                                         </button>
                                         <div className="w-px h-4 bg-gray-300 mx-2"></div>
                                     </>
                                 )}
-                                <button onClick={() => addService(category.id)} className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1.5 rounded-md hover:bg-primary/20 transition-colors">
+                                <button onClick={() => handleAddService(category.id)} className="flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 px-2.5 py-1.5 rounded-md hover:bg-primary/20 transition-colors">
                                     <Plus size={14} />
                                     Añadir Servicio
                                 </button>
@@ -238,7 +235,7 @@ export function ServiceCatalog() {
                                                     className="w-20 px-2 py-1 border border-gray-300 rounded focus:border-primary focus:outline-none"
                                                 />
                                             </div>
-                                            <button onClick={() => saveService(category.id)} className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 shadow-sm">
+                                            <button onClick={() => handleSaveService(category.id)} className="p-1.5 bg-green-500 text-white rounded hover:bg-green-600 shadow-sm">
                                                 <Save size={14} />
                                             </button>
                                             <button onClick={() => setEditingService(null)} className="p-1.5 bg-gray-200 text-gray-600 rounded hover:bg-gray-300">
@@ -259,7 +256,7 @@ export function ServiceCatalog() {
                                                 <button onClick={() => startEditService(service)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md">
                                                     <Edit2 size={14} />
                                                 </button>
-                                                <button onClick={() => deleteService(category.id, service.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md">
+                                                <button onClick={() => handleDeleteService(service.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md">
                                                     <Trash2 size={14} />
                                                 </button>
                                             </div>
