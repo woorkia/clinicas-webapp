@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from "react";
 import { Clock, MapPin, Globe, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { createBooking, getAvailableSlots } from "./actions";
@@ -157,7 +159,7 @@ export default function BookingPage() {
                                 <img src={settings.logoUrl} alt={settings.name} className="h-10 w-auto mb-4" />
                             ) : (
                                 <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                                    {settings?.name || "Clínica Demo"}
+                                    {settings?.name || "Clínica Demo [v2]"}
                                 </h2>
                             )}
                             <h1 className="text-3xl font-bold text-gray-900 leading-tight">
