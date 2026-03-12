@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from "react";
 import { Clock, MapPin, Globe, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { createBooking, getAvailableSlots } from "./actions";
-import { getCategories } from "@/app/admin/automation/actions";
+import { getCategories, getClinicSettings } from "@/lib/actions";
 
 export default function BookingPage() {
     const [isLoading, setIsLoading] = useState(true);
