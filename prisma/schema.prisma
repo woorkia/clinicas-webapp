@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,56 +8,46 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-
 model Category {
-  id        Int       @id @default(autoincrement())
-  name      String
-  services  Service[]
+  id       Int       @id @default(autoincrement())
+  name     String
+  services Service[]
 }
 
 model Service {
-  id          Int      @id @default(autoincrement())
-  name        String
-  duration    Int      // minutes
-  price       Float
-  categoryId  Int
-  category    Category @relation(fields: [categoryId], references: [id])
-  
-  // Optional: Relation to appointments if we want to track stats per service definition
-  // appointments Appointment[] 
+  id         Int      @id @default(autoincrement())
+  name       String
+  duration   Int
+  price      Float
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
 }
 
 model Client {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id           String        @id @default(uuid())
+  name         String
+  phone        String        @unique
+  email        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tags         String?
   appointments Appointment[]
-  
-  tags      String?
 }
 
 model Appointment {
-  id        String   @id @default(uuid())
-  date      DateTime
-  status    String   @default("CONFIRMED")
-  
-  // Snapshot of service details at time of booking
+  id           String   @id @default(uuid())
+  date         DateTime
+  status       String   @default("CONFIRMED")
   serviceName  String
   servicePrice Float    @default(0)
   duration     Int      @default(30)
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  clientId  String
-  client    Client   @relation(fields: [clientId], references: [id])
-  
-  notes     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  clientId     String
+  notes        String?
+  client       Client   @relation(fields: [clientId], references: [id])
 }
+
 model ClinicSettings {
   id            Int      @id @default(1)
   name          String   @default("Clínica Demo")
