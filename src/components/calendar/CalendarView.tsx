@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, ArrowLeft, Clock } from "lucide-react";
 import { clsx } from "clsx";
 
-const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const MONTHS = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -27,12 +27,24 @@ interface AppointmentData {
 
 interface CalendarViewProps {
     appointments: AppointmentData[];
+    currentMonth?: Date;
+    onMonthChange?: (date: Date) => void;
 }
 
-export function CalendarView({ appointments }: CalendarViewProps) {
+export function CalendarView({ appointments, currentMonth: propMonth, onMonthChange }: CalendarViewProps) {
     const [view, setView] = useState<"month" | "day">("month");
-    const [currentDate, setCurrentDate] = useState(new Date()); // For month navigation
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // The specific day viewing
+    const [internalDate, setInternalDate] = useState(new Date());
+    const currentDate = propMonth || internalDate;
+    
+    const setCurrentDate = (date: Date) => {
+        if (onMonthChange) {
+            onMonthChange(date);
+        } else {
+            setInternalDate(date);
+        }
+    };
+
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     // --- Month View Logic ---
     const daysInMonth = new Date(
@@ -41,11 +53,11 @@ export function CalendarView({ appointments }: CalendarViewProps) {
         0
     ).getDate();
 
-    const firstDayOfMonth = new Date(
-        currentDate.getFullYear(),
-        currentDate.getMonth(),
-        1
-    ).getDay();
+    const getFirstDayOfMonth = () => {
+        const day = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+        return day === 0 ? 6 : day - 1; // 0 (Sun) -> 6, 1 (Mon) -> 0, etc.
+    };
+    const firstDayOfMonth = getFirstDayOfMonth();
 
     const prevMonth = () => {
         setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -127,7 +139,7 @@ export function CalendarView({ appointments }: CalendarViewProps) {
                         {view === "month" ? (
                             `${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`
                         ) : (
-                            `${DAYS[selectedDate.getDay()]}, ${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`
+                            `${DAYS[(selectedDate.getDay() + 6) % 7]}, ${selectedDate.getDate()} de ${MONTHS[selectedDate.getMonth()]}`
                         )}
                     </h2>
 

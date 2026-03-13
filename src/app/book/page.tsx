@@ -32,7 +32,7 @@ export default function BookingPage() {
             try {
                 const [categoriesData, settingsData] = await Promise.all([
                     getCategories(),
-                    import("@/app/admin/automation/actions").then(m => m.getClinicSettings())
+                    getClinicSettings()
                 ]);
 
                 // Flatten categories
@@ -54,21 +54,66 @@ export default function BookingPage() {
         };
         loadData();
     }, []);
+    const [viewDate, setViewDate] = useState(new Date());
 
-    // Generate dates for the next 28 days to fill the grid
-    const dates = Array.from({ length: 35 }, (_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() + i);
-        return {
-            day: d.getDate(),
-            weekday: ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"][d.getDay()],
-            month: d.toLocaleString('es-ES', { month: 'long' }),
-            year: d.getFullYear(),
-            isWeekend: d.getDay() === 0 || d.getDay() === 6,
-            fullDate: d,
-            offset: i
-        };
-    });
+    const settingsData = {
+        name: settings?.name || "Clínica Demo",
+        address: settings?.address || "Valencia, Calle Flores n3",
+        logoUrl: settings?.logoUrl || null,
+        headerText: settings?.headerText || "Saca tu mejor sonrisa con nosotros 😎"
+    };
+
+    // --- CALENDAR LOGIC ---
+    const getDaysInMonth = (date: Date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1).getDay(); // 0 is Sunday
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        
+        // Adjust for Monday start (0=Sun -> 6, 1=Mon -> 0, ...)
+        const prefixDays = firstDay === 0 ? 6 : firstDay - 1;
+        
+        const days = [];
+        // Prefix days from prev month
+        for (let i = 0; i < prefixDays; i++) {
+            days.push({ day: null, currentMonth: false });
+        }
+        // Current month days
+        for (let i = 1; i <= daysInMonth; i++) {
+            const d = new Date(year, month, i);
+            const isPast = d < new Date(new Date().setHours(0,0,0,0));
+            days.push({ 
+                day: i, 
+                currentMonth: true, 
+                date: d,
+                isPast,
+                isToday: d.toDateString() === new Date().toDateString(),
+                isWeekend: d.getDay() === 0 || d.getDay() === 6
+            });
+        }
+        return days;
+    };
+
+    const calendarDays = getDaysInMonth(viewDate);
+    const monthName = viewDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+
+    const handleDateSelect = (d: Date) => {
+        setSelectedDate(d.getTime());
+    };
+
+    const nextMonth = () => {
+        const next = new Date(viewDate);
+        next.setMonth(next.getMonth() + 1);
+        setViewDate(next);
+    };
+
+    const prevMonth = () => {
+        const prev = new Date(viewDate);
+        // Don't go to past months
+        if (prev.getMonth() === new Date().getMonth() && prev.getFullYear() === new Date().getFullYear()) return;
+        prev.setMonth(prev.getMonth() - 1);
+        setViewDate(prev);
+    };
 
     // Effect to fetch slots when date changes
     useEffect(() => {
@@ -76,10 +121,7 @@ export default function BookingPage() {
             const fetchSlots = async () => {
                 setIsLoadingSlots(true);
                 setSelectedTime(null); // Reset time selection
-
-                const d = new Date();
-                d.setDate(d.getDate() + selectedDate);
-                const slots = await getAvailableSlots(d.toISOString());
+                const slots = await getAvailableSlots(new Date(selectedDate).toISOString());
                 setAvailableTimeSlots(slots);
                 setIsLoadingSlots(false);
             };
@@ -95,16 +137,12 @@ export default function BookingPage() {
         }
 
         setIsSubmitting(true);
-
-        const appointmentDate = new Date();
-        appointmentDate.setDate(appointmentDate.getDate() + selectedDate);
-
         const result = await createBooking({
             serviceId: selectedService.id,
             serviceName: selectedService.name,
             servicePrice: selectedService.price,
             serviceDuration: selectedService.duration,
-            date: appointmentDate,
+            date: new Date(selectedDate),
             time: selectedTime,
             clientName: formData.name,
             clientPhone: formData.phone,
@@ -119,9 +157,8 @@ export default function BookingPage() {
             alert("Hubo un error al reservar. Inténtalo de nuevo.");
         }
     };
+    // ----------------------
 
-    // --- RENDER HELPERS ---
-    const currentMonth = new Date().toLocaleString('es-ES', { month: 'long', year: 'numeric' });
 
     if (isLoading) {
         return (
@@ -138,73 +175,104 @@ export default function BookingPage() {
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
 
             {/* MAIN CARD CONTAINER */}
-            <div className="w-full max-w-6xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
+            <div className="w-full max-w-6xl bg-white shadow-2xl rounded-3xl overflow-hidden flex flex-col md:flex-row min-h-[650px] animate-in fade-in zoom-in duration-500">
 
                 {/* LEFT SIDEBAR (Info Panel) */}
-                <div className="md:w-[35%] bg-white border-r border-gray-100 p-8 flex flex-col justify-between relative">
+                <div className="md:w-1/3 bg-gray-50/50 border-r border-gray-100 p-8 flex flex-col justify-between relative">
                     {/* Back Button (only if not on step 1) */}
                     {step > 1 && step < 4 && (
                         <button
-                            onClick={() => setStep(step - 1)}
-                            className="absolute top-6 left-6 w-8 h-8 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 text-gray-500 transition-colors"
+                            onClick={() => {
+                                if (step === 3 && selectedTime) setStep(2);
+                                else if (step === 2) setStep(1);
+                                else setStep(step - 1);
+                            }}
+                            className="absolute top-6 left-6 w-10 h-10 flex items-center justify-center rounded-full bg-white shadow-sm border border-gray-100 hover:bg-gray-100 text-gray-500 transition-all hover:scale-105 active:scale-95 z-10"
                         >
-                            <ChevronLeft size={18} />
+                            <ChevronLeft size={20} />
                         </button>
                     )}
 
                     <div>
                         {/* Logo / Brand */}
-                        <div className="mb-8 mt-2">
-                            {settings?.logoUrl ? (
-                                <img src={settings.logoUrl} alt={settings.name} className="h-10 w-auto mb-4" />
+                        <div className="mb-10 mt-6 md:mt-10">
+                            {settingsData.logoUrl ? (
+                                <img src={settingsData.logoUrl} alt={settingsData.name} className="h-12 w-auto mb-4" />
                             ) : (
-                                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                                    {settings?.name || "Clínica Demo [v2]"}
-                                </h2>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">C</div>
+                                    <h2 className="text-sm font-bold text-gray-800 uppercase tracking-widest">
+                                        {settingsData.name}
+                                    </h2>
+                                </div>
                             )}
-                            <h1 className="text-3xl font-bold text-gray-900 leading-tight">
-                                {settings?.headerText || "Saca tu mejor sonrisa con nosotros 😎"}
+                            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
+                                {settingsData.headerText}
                             </h1>
                         </div>
 
                         {/* Selected Service Summary (if selected) */}
-                        {selectedService && step < 4 && (
-                            <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100 animate-fade-in-up">
-                                <p className="text-xs text-blue-600 font-semibold uppercase tracking-wide mb-1">Servicio seleccionado</p>
-                                <p className="text-lg font-bold text-blue-900">{selectedService.name}</p>
-                                <p className="text-blue-700">{selectedService.price}</p>
+                        {selectedService && (
+                            <div className="mb-8 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm animate-in slide-in-from-bottom-4 duration-300">
+                                <p className="text-[10px] text-blue-600 font-bold uppercase tracking-widest mb-2">Servicio seleccionado</p>
+                                <p className="text-xl font-bold text-gray-900 mb-1">{selectedService.name}</p>
+                                <p className="text-lg font-medium text-blue-600">{selectedService.price}</p>
+                                
+                                {selectedDate && (
+                                    <div className="mt-4 pt-4 border-t border-gray-50 space-y-2">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <CalendarIcon size={14} className="text-blue-500" />
+                                            <span className="capitalize">{new Date(selectedDate).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                                        </div>
+                                        {selectedTime && (
+                                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                <Clock size={14} className="text-blue-500" />
+                                                <span>{selectedTime}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* Metadata List */}
-                        <div className="space-y-4">
+                        <div className="space-y-4 px-2">
                             <div className="flex items-center gap-3 text-gray-600">
-                                <Clock size={20} className="text-gray-400" />
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <Clock size={18} />
+                                </div>
                                 <span className="text-sm font-medium">{selectedService ? selectedService.duration : "Duración variable"}</span>
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
-                                <MapPin size={20} className="text-gray-400" />
-                                <span className="text-sm font-medium">{settings?.address || "Valencia, Calle Flores n3"}</span>
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <MapPin size={18} />
+                                </div>
+                                <span className="text-sm font-medium">{settingsData.address}</span>
                             </div>
                             <div className="flex items-center gap-3 text-gray-600">
-                                <Globe size={20} className="text-gray-400" />
-                                <span className="text-sm font-medium">Conferencia web disponible</span>
+                                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <Globe size={18} />
+                                </div>
+                                <span className="text-sm font-medium">Asistencia personalizada</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8 text-xs text-gray-400">
-                        © 2026 {settings?.name || "Clínica Demo"}. Todos los derechos reservados.
+                    <div className="mt-8 pt-8 border-t border-gray-100 text-xs text-gray-400">
+                        © 2026 {settingsData.name}. Powered by IA.
                     </div>
                 </div>
 
                 {/* RIGHT PANEL (Interaction Area) */}
-                <div className="md:w-[65%] p-8 md:p-12 bg-white relative overflow-y-auto max-h-[90vh]">
+                <div className="md:w-2/3 p-8 md:p-12 bg-white relative overflow-y-auto max-h-[90vh] custom-scrollbar">
 
                     {/* STEP 1: SERVICES */}
                     {step === 1 && (
-                        <div className="space-y-6 animate-fade-in">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-6">Selecciona un servicio</h2>
+                        <div className="space-y-8 animate-in fade-in duration-500">
+                            <div>
+                                <h2 className="text-3xl font-bold text-gray-900 mb-2">Reserva tu cita</h2>
+                                <p className="text-gray-500">Selecciona el tratamiento que deseas realizarte.</p>
+                            </div>
                             <div className="grid gap-4">
                                 {services.map((srv) => (
                                     <button
@@ -213,17 +281,20 @@ export default function BookingPage() {
                                             setSelectedService(srv);
                                             setStep(2);
                                         }}
-                                        className="w-full bg-white p-6 rounded-2xl border border-gray-200 text-left hover:border-blue-400 hover:shadow-lg hover:shadow-blue-50 transition-all group flex justify-between items-center"
+                                        className="w-full bg-white p-6 rounded-2xl border border-gray-100 text-left hover:border-blue-200 hover:shadow-xl hover:shadow-blue-50/50 transition-all group flex justify-between items-center relative overflow-hidden"
                                     >
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-transparent group-hover:bg-blue-600 transition-colors"></div>
                                         <div>
-                                            <p className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">{srv.name}</p>
-                                            <p className="text-gray-500 mt-1 flex items-center gap-2">
-                                                <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-600">{srv.duration}</span>
-                                                <span className="text-sm">• {srv.price}</span>
-                                            </p>
+                                            <p className="font-bold text-xl text-gray-900 group-hover:text-blue-600 transition-colors">{srv.name}</p>
+                                            <div className="flex items-center gap-3 mt-2">
+                                                <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                                                    <Clock size={12} /> {srv.duration}
+                                                </span>
+                                                <span className="text-sm font-bold text-gray-700">{srv.price}</span>
+                                            </div>
                                         </div>
-                                        <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                            <ChevronRight size={18} />
+                                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
+                                            <ChevronRight size={20} />
                                         </div>
                                     </button>
                                 ))}
@@ -231,72 +302,114 @@ export default function BookingPage() {
                         </div>
                     )}
 
-                    {/* STEP 2: CALENDAR & TIME */}
+                    {/* STEP 2: CALENDAR & TIME (MONTH VIEW) */}
                     {step === 2 && (
-                        <div className="animate-fade-in">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Selecciona una fecha y hora</h2>
-                            <p className="text-gray-500 mb-8 capitalize">{currentMonth}</p>
-
-                            {/* Calendar Grid */}
-                            <div className="mb-8">
-                                <div className="grid grid-cols-7 mb-4 text-center">
-                                    {["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].map(day => (
-                                        <div key={day} className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{day}</div>
-                                    ))}
-                                </div>
-                                <div className="grid grid-cols-7 gap-y-2 gap-x-2">
-                                    {/* Simple offset for demo purposes (assuming starts on correct day or just listing next days) */}
-                                    {/* Ideally we calculate the offset of the 1st of the month, but for 'Next Days' flow we just list them */}
-                                    {dates.slice(0, 28).map((d, i) => {
-                                        const isSelected = selectedDate === d.offset;
-                                        return (
-                                            <button
-                                                key={i}
-                                                onClick={() => setSelectedDate(d.offset)}
-                                                className={`
-                                                    h-12 w-full rounded-full flex items-center justify-center text-sm font-medium transition-all
-                                                    ${isSelected
-                                                        ? "bg-blue-100 text-blue-700 font-bold ring-2 ring-blue-600"
-                                                        : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
-                                                    }
-                                                    ${d.isWeekend ? "text-gray-300 pointer-events-none" : ""} 
-                                                `}
-                                                disabled={d.isWeekend}
-                                            >
-                                                {d.day}
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="flex flex-col lg:flex-row gap-8">
+                                {/* Calendar Column */}
+                                <div className="flex-1">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-2xl font-bold text-gray-900">Selecciona Fecha</h2>
+                                        <div className="flex items-center bg-gray-50 rounded-lg p-1">
+                                            <button onClick={prevMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500">
+                                                <ChevronLeft size={16} />
                                             </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            {/* Time Slots (Conditionally displayed below or to the side could work too, adhering to layout below for now) */}
-                            <div className={`transition-all duration-500 ease-in-out ${selectedDate !== null ? 'opacity-100 max-h-[500px]' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-                                <h3 className="text-sm font-semibold text-gray-900 mb-4 p-2 border-t border-gray-100 pt-6">Horas disponibles para el {dates[selectedDate || 0]?.day}</h3>
-
-                                {isLoadingSlots ? (
-                                    <div className="flex justify-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                                        {availableTimeSlots.map(time => (
-                                            <button
-                                                key={time}
-                                                onClick={() => {
-                                                    setSelectedTime(time);
-                                                    setStep(3);
-                                                }}
-                                                className="py-2 px-4 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-medium text-sm transition-all focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
-                                            >
-                                                {time}
+                                            <span className="px-4 text-sm font-bold text-gray-700 capitalize w-32 text-center">{monthName}</span>
+                                            <button onClick={nextMonth} className="p-2 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500">
+                                                <ChevronRight size={16} />
                                             </button>
-                                        ))}
+                                        </div>
                                     </div>
-                                )}
-                                {availableTimeSlots.length === 0 && !isLoadingSlots && (
-                                    <p className="text-gray-400 text-sm text-center italic">No hay huecos libres.</p>
-                                )}
+
+                                    {/* Month Grid */}
+                                    <div className="bg-gray-50/50 rounded-2xl p-4">
+                                        <div className="grid grid-cols-7 mb-4 text-center">
+                                            {["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"].map(day => (
+                                                <div key={day} className="text-[10px] font-bold text-gray-400 uppercase tracking-widest py-2">{day}</div>
+                                            ))}
+                                        </div>
+                                        <div className="grid grid-cols-7 gap-1">
+                                            {calendarDays.map((d, i) => {
+                                                if (!d.day) return <div key={i} />;
+                                                
+                                                const isSelected = selectedDate && new Date(selectedDate).toDateString() === d.date?.toDateString();
+                                                const disabled = d.isPast || d.isWeekend;
+
+                                                return (
+                                                    <button
+                                                        key={i}
+                                                        disabled={disabled}
+                                                        onClick={() => handleDateSelect(d.date!)}
+                                                        className={`
+                                                            aspect-square w-full rounded-xl flex flex-col items-center justify-center text-sm transition-all relative group
+                                                            ${disabled 
+                                                                ? "text-gray-300 cursor-not-allowed" 
+                                                                : isSelected
+                                                                    ? "bg-blue-600 text-white font-bold shadow-lg shadow-blue-200 scale-105 z-10"
+                                                                    : "text-gray-700 hover:bg-white hover:text-blue-600 hover:shadow-sm"
+                                                            }
+                                                        `}
+                                                    >
+                                                        {d.isToday && !isSelected && (
+                                                            <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                                                        )}
+                                                        <span className="z-10">{d.day}</span>
+                                                        {isSelected && <span className="text-[8px] absolute bottom-1 font-bold uppercase z-10">Sel.</span>}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-6 flex items-center gap-4 text-[10px] text-gray-400 font-medium ml-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500"></div> Hoy
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full border border-gray-300"></div> Disponible
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Time Slots Column */}
+                                <div className={`lg:w-64 transition-all duration-500 ${selectedDate ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-6">Selecciona Hora</h3>
+                                    
+                                    <div className="bg-white border-l border-gray-100 lg:pl-6 min-h-[300px]">
+                                        {isLoadingSlots ? (
+                                            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                                <Loader2 className="animate-spin text-blue-600" size={24} />
+                                                <p className="text-xs text-gray-400 font-medium">Buscando huecos...</p>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+                                                {availableTimeSlots.map(time => (
+                                                    <button
+                                                        key={time}
+                                                        onClick={() => {
+                                                            setSelectedTime(time);
+                                                            setStep(3);
+                                                        }}
+                                                        className="py-3 px-4 rounded-xl border border-gray-100 text-gray-700 hover:border-blue-600 hover:text-blue-600 font-bold text-sm transition-all hover:shadow-lg hover:shadow-blue-50 flex items-center justify-between group"
+                                                    >
+                                                        {time}
+                                                        <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    </button>
+                                                ))}
+                                                {availableTimeSlots.length === 0 && selectedDate && (
+                                                    <div className="py-12 text-center">
+                                                        <p className="text-gray-400 text-sm italic">No hay disponibilidad para este día.</p>
+                                                    </div>
+                                                )}
+                                                {!selectedDate && (
+                                                    <div className="py-12 text-center">
+                                                        <p className="text-gray-400 text-sm italic">Clica en un día para ver las horas.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -359,7 +472,7 @@ export default function BookingPage() {
                             </div>
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Reserva Confirmada!</h2>
                             <p className="text-gray-500 max-w-md mx-auto mb-8 text-lg">
-                                Gracias <strong>{formData.name.split(' ')[0]}</strong>. Hemos agendado tu cita para el <strong>{new Date(new Date().setDate(new Date().getDate() + (selectedDate || 0))).toLocaleDateString()} a las {selectedTime}</strong>.
+                                Gracias <strong>{formData.name.split(' ')[0]}</strong>. Hemos agendado tu cita para el <strong>{selectedDate ? new Date(selectedDate).toLocaleDateString() : ''} a las {selectedTime}</strong>.
                             </p>
 
                             <div className="flex gap-4">

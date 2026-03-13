@@ -16,7 +16,19 @@ import { getDashboardStats } from "@/lib/actions";
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const { totalAppointments, totalClients, recentAppointments } = await getDashboardStats();
+  let stats = {
+    totalAppointments: 0,
+    totalClients: 0,
+    recentAppointments: [] as any[]
+  };
+
+  try {
+    stats = await getDashboardStats();
+  } catch (error) {
+    console.error("Error fetching dashboard stats:", error);
+  }
+
+  const { totalAppointments, totalClients, recentAppointments } = stats;
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">

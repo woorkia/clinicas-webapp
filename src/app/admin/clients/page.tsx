@@ -2,11 +2,23 @@ import { Download, Plus, Search, Filter } from "lucide-react";
 export const dynamic = 'force-dynamic';
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { prisma } from "@/lib/prisma";
+import { ClientManager } from "@/components/clients/ClientManager";
 
 export default async function ClientsPage() {
-    const clients = await prisma.client.findMany({
-        orderBy: { createdAt: 'desc' }
-    });
+    let clients: any[] = [];
+    try {
+        clients = await prisma.client.findMany({
+            include: {
+                appointments: {
+                    orderBy: { date: 'desc' },
+                    take: 1
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+    } catch (error) {
+        console.error("Error fetching clients:", error);
+    }
 
     return (
         <div className="space-y-6">
@@ -18,16 +30,7 @@ export default async function ClientsPage() {
                         Gestión centralizada de todos los pacientes y su historial.
                     </p>
                 </div>
-                <div className="flex gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-                        <Download size={18} />
-                        <span className="hidden sm:inline">Exportar CSV</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20">
-                        <Plus size={18} />
-                        Nuevo Cliente
-                    </button>
-                </div>
+                <ClientManager clients={clients} />
             </div>
 
             {/* Filters and Search */}

@@ -1,75 +1,103 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Plus, Loader2, Clock } from "lucide-react";
+import { clsx } from "clsx";
+import { getAppointments, getClients, getCategories } from "@/lib/actions";
+import { AppointmentModal } from "@/components/calendar/AppointmentModal";
+import { CalendarView } from "@/components/calendar/CalendarView";
 
-const daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const daysOfWeek = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const hours = Array.from({ length: 13 }, (_, i) => i + 8); // 8:00 to 20:00
 
 export default function CalendarPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [appointments, setAppointments] = useState<any[]>([]);
+    const [clients, setClients] = useState<any[]>([]);
+    const [categories, setCategories] = useState<any[]>([]);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // Mock appointments for demo
-    const appointments = [
-        { id: 1, day: 2, hour: 10, client: 'María García', service: 'Limpieza Facial' },
-        { id: 2, day: 2, hour: 16, client: 'Lucía López', service: 'Depilación Láser' },
-        { id: 3, day: 3, hour: 11, client: 'Ana Martínez', service: 'Consulta' },
-    ];
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                // Get start and end of current month for filtering (plus some buffer)
+                const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                startOfMonth.setDate(startOfMonth.getDate() - 7); // Buffer for previous month days
+                const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                endOfMonth.setDate(endOfMonth.getDate() + 7); // Buffer for next month days
+                
+                startOfMonth.setHours(0, 0, 0, 0);
+                endOfMonth.setHours(23, 59, 59, 999);
+
+                const [appts, clis, cats] = await Promise.all([
+                    getAppointments(startOfMonth, endOfMonth),
+                    getClients(),
+                    getCategories()
+                ]);
+
+                setAppointments(appts);
+                setClients(clis);
+                setCategories(cats);
+            } catch (error) {
+                console.error("Error fetching calendar data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [currentDate]);
+
+    const nextMonth = () => {
+        const next = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+        setCurrentDate(next);
+    };
+
+    const prevMonth = () => {
+        const prev = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+        setCurrentDate(prev);
+    };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8 font-sans">
-            <div className="max-w-7xl mx-auto">
-                <header className="mb-8 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Agenda de Citas</h1>
-                        <p className="text-gray-500">Gestionado automáticamente por WhatsApp</p>
-                    </div>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+        <div className="space-y-6">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Agenda de Citas</h1>
+                    <p className="text-sm text-gray-500 mt-1">Gestión de citas y disponibilidad de la clínica.</p>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm shadow-primary/20"
+                    >
+                        <Plus size={18} />
                         Nueva Cita Manual
                     </button>
-                </header>
-
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    {/* Calendar Header */}
-                    <div className="grid grid-cols-8 border-b border-gray-200 bg-gray-50">
-                        <div className="p-4 text-center text-gray-400 font-medium">Hora</div>
-                        {daysOfWeek.map((day) => (
-                            <div key={day} className="p-4 text-center font-semibold text-gray-700">
-                                {day}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Calendar Grid */}
-                    <div className="divide-y divide-gray-100">
-                        {hours.map((hour) => (
-                            <div key={hour} className="grid grid-cols-8 min-h-[80px]">
-                                {/* Time Column */}
-                                <div className="p-4 border-r border-gray-100 text-gray-500 text-sm font-medium bg-gray-50/50 flex items-center justify-center">
-                                    {hour}:00
-                                </div>
-
-                                {/* Days Columns */}
-                                {daysOfWeek.map((_, dayIndex) => {
-                                    const appointment = appointments.find(
-                                        (apt) => apt.day === dayIndex && apt.hour === hour
-                                    );
-
-                                    return (
-                                        <div key={dayIndex} className="relative p-1 border-r border-gray-100 hover:bg-gray-50 transition">
-                                            {appointment && (
-                                                <div className="absolute inset-1 bg-blue-100 border-l-4 border-blue-500 rounded p-2 text-xs overflow-hidden hover:shadow-md cursor-pointer transition-all">
-                                                    <p className="font-bold text-blue-900 truncate">{appointment.client}</p>
-                                                    <p className="text-blue-700 truncate">{appointment.service}</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
                 </div>
+            </header>
+
+            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden h-[800px]">
+                {loading ? (
+                    <div className="h-full w-full flex items-center justify-center">
+                        <Loader2 className="animate-spin text-primary" size={32} />
+                    </div>
+                ) : (
+                    <CalendarView 
+                        appointments={appointments} 
+                        currentMonth={currentDate}
+                        onMonthChange={setCurrentDate}
+                    />
+                )}
             </div>
+
+            <AppointmentModal 
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                clients={clients}
+                categories={categories}
+            />
         </div>
     );
 }

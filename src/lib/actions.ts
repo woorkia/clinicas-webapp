@@ -11,9 +11,10 @@ export async function getClinicSettings() {
       settings = await prisma.clinicSettings.create({
         data: {
           name: "Clínica Demo",
-          headerText: "Saca tu mejor sonrisa con nosotros 😎",
           address: "Calle Ejemplo 123",
-          primaryColor: "#3b82f6",
+          phone: "+34 600 000 000",
+          assistantName: "Ana (IA Clínica)",
+          isBotActive: true
         },
       });
     }
@@ -51,6 +52,7 @@ export async function getCategories() {
       include: {
         services: true,
       },
+      orderBy: { id: 'asc' }
     });
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -58,19 +60,7 @@ export async function getCategories() {
   }
 }
 
-export async function createCategory(name: string) {
-  try {
-    const category = await prisma.category.create({
-      data: { name },
-    });
-    revalidatePath("/admin/automation");
-    return { success: true, category };
-  } catch (error) {
-    return { success: false, error: "Error al crear categoría" };
-  }
-}
-
-export async function deleteCategory(id: string) {
+export async function deleteCategory(id: number) {
   try {
     await prisma.category.delete({ where: { id } });
     revalidatePath("/admin/automation");
@@ -80,25 +70,28 @@ export async function deleteCategory(id: string) {
   }
 }
 
-export async function createService(data: {
-  name: string;
-  price: number;
-  duration: number;
-  categoryId: string;
-}) {
+export async function saveCategory(id: number | null, name: string) {
   try {
-    const service = await prisma.service.create({
-      data,
-    });
+    let category;
+    if (id) {
+      category = await prisma.category.update({
+        where: { id },
+        data: { name },
+      });
+    } else {
+      category = await prisma.category.create({
+        data: { name },
+      });
+    }
     revalidatePath("/admin/automation");
-    revalidatePath("/book");
-    return { success: true, service };
-  } catch (error) {
-    return { success: false, error: "Error al crear servicio" };
+    return { success: true, category };
+  } catch (error: any) {
+    console.error("Error saving category:", error);
+    return { success: false, error: "Error: " + (error.message || String(error)) };
   }
 }
 
-export async function deleteService(id: string) {
+export async function deleteService(id: number) {
   try {
     await prisma.service.delete({ where: { id } });
     revalidatePath("/admin/automation");
@@ -109,7 +102,136 @@ export async function deleteService(id: string) {
   }
 }
 
+export async function saveService(data: {
+  id?: number;
+  name: string;
+  price: number;
+  duration: number;
+  categoryId: number;
+}) {
+  try {
+    if (data.id) {
+      await prisma.service.update({
+        where: { id: data.id },
+        data: {
+          name: data.name,
+          price: data.price,
+          duration: data.duration,
+          categoryId: data.categoryId,
+        },
+      });
+    } else {
+      await prisma.service.create({
+        data: {
+          name: data.name,
+          price: data.price,
+          duration: data.duration,
+          categoryId: data.categoryId,
+        },
+      });
+    }
+    revalidatePath("/admin/automation");
+    revalidatePath("/book");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error saving service:", error);
+    return { success: false, error: "Error: " + (error.message || String(error)) };
+  }
+}
+
+// --- CLIENTS ---
+export async function saveClient(data: {
+  id?: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+}) {
+  try {
+    if (data.id) {
+      await prisma.client.update({
+        where: { id: data.id },
+        data: {
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+        },
+      });
+    } else {
+      await prisma.client.create({
+        data: {
+          name: data.name,
+          phone: data.phone,
+          email: data.email,
+        },
+      });
+    }
+    revalidatePath("/admin/clients");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error saving client:", error);
+    return { success: false, error: "Error: " + (error.message || String(error)) };
+  }
+}
+
+export async function getClients() {
+  try {
+    return await prisma.client.findMany({
+      orderBy: { name: 'asc' }
+    });
+  } catch (error) {
+    console.error("Error fetching clients:", error);
+    return [];
+  }
+}
+
 // --- APPOINTMENTS ---
+export async function saveAppointment(data: {
+  clientId: string;
+  serviceName: string;
+  date: Date;
+  duration: number;
+  price: number;
+  notes?: string;
+}) {
+  try {
+    await prisma.appointment.create({
+      data: {
+        clientId: data.clientId,
+        serviceName: data.serviceName,
+        date: data.date,
+        duration: data.duration,
+        servicePrice: data.price,
+        notes: data.notes,
+        status: "CONFIRMED"
+      }
+    });
+    revalidatePath("/admin/calendar");
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error saving appointment:", error);
+    return { success: false, error: "Error: " + (error.message || String(error)) };
+  }
+}
+
+export async function getAppointments(start: Date, end: Date) {
+  try {
+    return await prisma.appointment.findMany({
+      where: {
+        date: {
+          gte: start,
+          lte: end
+        }
+      },
+      include: {
+        client: true
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    return [];
+  }
+}
 export async function getDashboardStats() {
   try {
     const [appointmentsCount, clientsCount] = await Promise.all([

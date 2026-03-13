@@ -2,7 +2,7 @@
 
 import { Plus, Edit2, Trash2, FolderOpen, Save, X, Check, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { getCategories, saveCategory, deleteCategory, saveService, deleteService } from "@/app/admin/automation/actions";
+import { getCategories, saveCategory, deleteCategory, saveService, deleteService } from "@/lib/actions";
 
 interface Service {
     id: number;
@@ -43,9 +43,11 @@ export function ServiceCatalog() {
     // --- Actions ---
 
     const handleAddCategory = async () => {
-        const result = await saveCategory(null, "Nueva Categoría");
+        const result = await saveCategory(null, "Nueva Categoría") as any;
         if (result.success) {
             await loadData();
+        } else {
+            alert("Error al crear categoría: " + (result.error || "Desconocido"));
         }
     };
 
@@ -106,11 +108,13 @@ export function ServiceCatalog() {
             duration: tempService.duration || 30,
             price: tempService.price || 0,
             categoryId: catId
-        });
+        }) as any;
 
         if (result.success) {
             setEditingService(null);
             await loadData();
+        } else {
+            alert("Error al guardar servicio: " + (result.error || "Desconocido"));
         }
     };
 
