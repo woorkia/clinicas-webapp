@@ -47,8 +47,8 @@ export default function AdminLayout({
             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
               Panel de Administración
             </p>
-              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
-                V2.9 RELOAD FIX
+              <span className="text-[10px] font-bold bg-indigo-500 text-white px-2 py-0.5 rounded-full shadow-sm">
+                  V3.0 PATIENT HISTORY
               </span>
           </div>
         </div>

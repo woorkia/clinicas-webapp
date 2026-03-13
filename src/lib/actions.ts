@@ -302,3 +302,16 @@ export async function getDashboardStats() {
     };
   }
 }
+
+// --- CLIENT ACTIONS ---
+export async function getClientHistory(clientId: string) {
+  try {
+    return await prisma.appointment.findMany({
+      where: { clientId },
+      orderBy: { date: 'desc' }
+    });
+  } catch (error) {
+    console.error("Error fetching client history:", error);
+    return [];
+  }
+}

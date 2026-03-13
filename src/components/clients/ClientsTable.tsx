@@ -4,7 +4,9 @@ import { MoreHorizontal, MessageSquare, Calendar, Phone, Edit2 } from "lucide-re
 import { clsx } from "clsx";
 import { useState } from "react";
 import { ClientModal } from "./ClientModal";
+import { ClientHistory } from "./ClientHistory";
 import { saveClient } from "@/lib/actions";
+import { Clock } from "lucide-react";
 
 interface ClientsTableProps {
     data: any[];
@@ -13,6 +15,7 @@ interface ClientsTableProps {
 export function ClientsTable({ data }: ClientsTableProps) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<any>(null);
+    const [viewingHistoryClient, setViewingHistoryClient] = useState<any>(null);
 
     // Helper to format date
     const formatDate = (date: Date | string | undefined) => {
@@ -25,6 +28,10 @@ export function ClientsTable({ data }: ClientsTableProps) {
     const handleEdit = (client: any) => {
         setEditingClient(client);
         setIsEditModalOpen(true);
+    };
+
+    const handleViewHistory = (client: any) => {
+        setViewingHistoryClient(client);
     };
 
     const handleSave = async (updatedData: any) => {
@@ -105,6 +112,11 @@ export function ClientsTable({ data }: ClientsTableProps) {
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button 
+                                                onClick={() => handleViewHistory(client)}
+                                                className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Ver Historial">
+                                                <Clock size={18} />
+                                            </button>
+                                            <button 
                                                 onClick={() => handleEdit(client)}
                                                 className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Cliente">
                                                 <Edit2 size={18} />
@@ -130,6 +142,13 @@ export function ClientsTable({ data }: ClientsTableProps) {
                 onSave={handleSave}
                 client={editingClient}
             />
+
+            {viewingHistoryClient && (
+                <ClientHistory 
+                    client={viewingHistoryClient}
+                    onClose={() => setViewingHistoryClient(null)}
+                />
+            )}
         </div>
     );
 }
