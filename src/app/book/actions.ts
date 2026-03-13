@@ -115,12 +115,18 @@ export async function getAvailableSlots(dateStr: string) {
         
         // 1. Fetch Clinic Settings
         const settings = await prisma.clinicSettings.findFirst();
-        if (!settings || !settings.availability) {
-            // Fallback to default if no settings
-            return [];
-        }
+        
+        const defaultAvailability: any = {
+            monday: { isOpen: true, start: "09:00", end: "18:00" },
+            tuesday: { isOpen: true, start: "09:00", end: "18:00" },
+            wednesday: { isOpen: true, start: "09:00", end: "18:00" },
+            thursday: { isOpen: true, start: "09:00", end: "18:00" },
+            friday: { isOpen: true, start: "09:00", end: "18:00" },
+            saturday: { isOpen: false, start: "09:00", end: "14:00" },
+            sunday: { isOpen: false, start: "09:00", end: "14:00" },
+        };
 
-        const availability = settings.availability as any;
+        const availability = (settings?.availability as any) || defaultAvailability;
         const daySchedule = availability[dayOfWeek];
 
         if (!daySchedule || !daySchedule.isOpen) {
@@ -167,7 +173,21 @@ export async function getAvailableSlots(dateStr: string) {
             return `${hours}:${minutes}`;
         });
 
-        return slots.filter(slot => !bookedTimes.includes(slot));
+        const now = new Date();
+        const forToday = queryDate.toDateString() === now.toDateString();
+
+        return slots.filter(slot => {
+            if (bookedTimes.includes(slot)) return false;
+            
+            if (forToday) {
+                const [h, m] = slot.split(":").map(Number);
+                const slotDate = new Date();
+                slotDate.setHours(h, m, 0, 0);
+                return slotDate > now;
+            }
+            
+            return true;
+        });
 
     } catch (error) {
         console.error("Error fetching slots:", error);
