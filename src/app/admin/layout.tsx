@@ -15,12 +15,18 @@ import {
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 
+import { logout } from "@/lib/actions";
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
@@ -42,7 +48,7 @@ export default function AdminLayout({
               Panel de Administración
             </p>
               <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
-                V2.8 LOGOUT FIX
+                V2.9 RELOAD FIX
               </span>
           </div>
         </div>
@@ -76,10 +82,7 @@ export default function AdminLayout({
             <Settings size={20} />
             <span className="text-sm">Configuración</span>
           </Link>
-          <form action={async () => {
-            const { logout } = await import("@/lib/actions");
-            await logout();
-          }}>
+          <form action={logout}>
             <button type="submit" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all">
               <LogOut size={20} />
               <span className="text-sm">Cerrar Sesión</span>

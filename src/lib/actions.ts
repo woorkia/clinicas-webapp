@@ -29,7 +29,7 @@ export async function getClinicSettings() {
 
 export async function validateAdminLogin(username: string, password: string) {
   try {
-    const settings = await prisma.clinicSettings.findFirst();
+    const settings = (await prisma.clinicSettings.findFirst()) as any;
     if (!settings) {
       // Fallback for first run if DB is somehow empty but middleware triggered
       return { success: username === "admin" && password === "admin123" };
