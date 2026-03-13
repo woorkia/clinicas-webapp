@@ -2,6 +2,8 @@
 
 import { prisma } from "./prisma";
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 // --- SETTINGS ---
 export async function getClinicSettings() {
@@ -72,6 +74,12 @@ export async function updateClinicSettings(data: {
     console.error("Error updating clinic settings:", error);
     return { success: false, error: "Error al actualizar la configuración" };
   }
+}
+
+export async function logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete('auth_session');
+  redirect('/login');
 }
 
 // --- CATEGORIES & SERVICES ---
