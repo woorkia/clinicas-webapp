@@ -37,9 +37,14 @@ export default function AdminLayout({
           <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             Clínicas Llenas
           </h1>
-          <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest mt-1">
-            Panel de Administración
-          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
+              Panel de Administración
+            </p>
+            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded animate-pulse">
+              V2.1 LIVE
+            </span>
+          </div>
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
