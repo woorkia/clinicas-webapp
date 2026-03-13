@@ -25,7 +25,15 @@ export async function getClinicSettings() {
   }
 }
 
-export async function updateClinicSettings(data: any) {
+export async function updateClinicSettings(data: {
+  name?: string;
+  address?: string;
+  phone?: string;
+  assistantName?: string;
+  isBotActive?: boolean;
+  availability?: any;
+  appointmentRules?: any;
+}) {
   try {
     const settings = await prisma.clinicSettings.findFirst();
     if (settings) {
@@ -34,7 +42,7 @@ export async function updateClinicSettings(data: any) {
         data,
       });
     } else {
-      await prisma.clinicSettings.create({ data });
+      await prisma.clinicSettings.create({ data: { ...data, id: 1 } });
     }
     revalidatePath("/admin/automation");
     revalidatePath("/book");

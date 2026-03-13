@@ -56,5 +56,7 @@ model ClinicSettings {
   phone         String   @default("+34 600 000 000")
   assistantName String   @default("Ana (IA Clínica)")
   isBotActive   Boolean  @default(true)
-  updatedAt     DateTime @updatedAt
+  availability     Json?
+  appointmentRules Json?
+  updatedAt        DateTime @updatedAt
 }

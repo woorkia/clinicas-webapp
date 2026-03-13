@@ -78,17 +78,35 @@ export default function BookingPage() {
         for (let i = 0; i < prefixDays; i++) {
             days.push({ day: null, currentMonth: false });
         }
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const availability = settings?.availability as any;
+        const rules = settings?.appointmentRules as any;
+
         // Current month days
         for (let i = 1; i <= daysInMonth; i++) {
             const d = new Date(year, month, i);
-            const isPast = d < new Date(new Date().setHours(0,0,0,0));
+            const isPast = d < today;
+            
+            // Check if day is open in availability
+            const dayName = d.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+            const isOpen = availability ? availability[dayName]?.isOpen : (d.getDay() !== 0 && d.getDay() !== 6);
+
+            // Check max advance booking
+            const maxAdvanceMonths = parseInt(rules?.maxAdvanceBooking || "1");
+            const maxDate = new Date();
+            maxDate.setMonth(maxDate.getMonth() + maxAdvanceMonths);
+            const isTooFar = d > maxDate;
+
             days.push({ 
                 day: i, 
                 currentMonth: true, 
                 date: d,
                 isPast,
                 isToday: d.toDateString() === new Date().toDateString(),
-                isWeekend: d.getDay() === 0 || d.getDay() === 6
+                isDisabled: isPast || !isOpen || isTooFar
             });
         }
         return days;
@@ -98,6 +116,24 @@ export default function BookingPage() {
     const monthName = viewDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
 
     const handleDateSelect = (d: Date) => {
+        // Handle min lead time
+        const rules = settings?.appointmentRules as any;
+        const minHours = parseInt(rules?.minLeadTime || "1");
+        
+        const now = new Date();
+        const selectedWithTime = new Date(d);
+        // We set to end of day to check if the DAY is potentially valid
+        // Specific time slots will be filtered later in actions.ts
+        selectedWithTime.setHours(23, 59, 0, 0);
+
+        const leadTimeLimit = new Date();
+        leadTimeLimit.setHours(now.getHours() + minHours);
+
+        if (selectedWithTime < leadTimeLimit) {
+            alert(`Este día es demasiado pronto. Se requiere un aviso de ${minHours} horas.`);
+            return;
+        }
+
         setSelectedDate(d.getTime());
     };
 
@@ -333,7 +369,7 @@ export default function BookingPage() {
                                                 if (!d.day) return <div key={i} />;
                                                 
                                                 const isSelected = selectedDate && new Date(selectedDate).toDateString() === d.date?.toDateString();
-                                                const disabled = d.isPast || d.isWeekend;
+                                                const disabled = d.isDisabled;
 
                                                 return (
                                                     <button

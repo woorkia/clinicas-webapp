@@ -111,6 +111,23 @@ export async function createBooking(data: {
 export async function getAvailableSlots(dateStr: string) {
     try {
         const queryDate = new Date(dateStr);
+        const dayOfWeek = queryDate.toLocaleDateString("en-US", { weekday: "long" }).toLowerCase();
+        
+        // 1. Fetch Clinic Settings
+        const settings = await prisma.clinicSettings.findFirst();
+        if (!settings || !settings.availability) {
+            // Fallback to default if no settings
+            return [];
+        }
+
+        const availability = settings.availability as any;
+        const daySchedule = availability[dayOfWeek];
+
+        if (!daySchedule || !daySchedule.isOpen) {
+            return [];
+        }
+
+        // 2. Fetch Appointments for the day
         const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
         const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
 
@@ -124,14 +141,25 @@ export async function getAvailableSlots(dateStr: string) {
             },
         });
 
-        // Generate all possible slots (9:00 to 19:30, 30 min interval)
-        const allSlots = [
-            "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-            "12:00", "12:30", "13:00", "13:30", "16:00", "16:30",
-            "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
-        ];
+        // 3. Generate slots based on daily hours
+        const slots = [];
+        const [startHours, startMins] = daySchedule.start.split(":").map(Number);
+        const [endHours, endMins] = daySchedule.end.split(":").map(Number);
 
-        // Filter out booked slots
+        let current = new Date(queryDate);
+        current.setHours(startHours, startMins, 0, 0);
+
+        const endTime = new Date(queryDate);
+        endTime.setHours(endHours, endMins, 0, 0);
+
+        // Standard 30 min interval for slots (can be made dynamic later)
+        while (current < endTime) {
+            const timeStr = `${current.getHours().toString().padStart(2, '0')}:${current.getMinutes().toString().padStart(2, '0')}`;
+            slots.push(timeStr);
+            current.setMinutes(current.getMinutes() + 30);
+        }
+
+        // 4. Filter out booked slots
         const bookedTimes = appointments.map(appt => {
             const d = new Date(appt.date);
             const hours = d.getHours().toString().padStart(2, '0');
@@ -139,9 +167,7 @@ export async function getAvailableSlots(dateStr: string) {
             return `${hours}:${minutes}`;
         });
 
-        const availableSlots = allSlots.filter(slot => !bookedTimes.includes(slot));
-
-        return availableSlots;
+        return slots.filter(slot => !bookedTimes.includes(slot));
 
     } catch (error) {
         console.error("Error fetching slots:", error);
