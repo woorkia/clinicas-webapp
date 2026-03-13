@@ -42,7 +42,7 @@ export default function AdminLayout({
               Panel de Administración
             </p>
             <span className="px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded animate-pulse">
-              V2.1 LIVE
+              V2.2 FINAL
             </span>
           </div>
         </div>
