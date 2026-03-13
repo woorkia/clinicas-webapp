@@ -42,7 +42,7 @@ export default function AdminLayout({
               Panel de Administración
             </p>
               <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
-                V2.6 SECURITY
+                V2.7 FINAL FIX
               </span>
           </div>
         </div>
