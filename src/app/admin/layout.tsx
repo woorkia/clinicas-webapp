@@ -41,9 +41,9 @@ export default function AdminLayout({
             <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">
               Panel de Administración
             </p>
-            <span className="px-1.5 py-0.5 bg-red-500 text-white text-[8px] font-bold rounded animate-pulse">
-              V2.3 FIX
-            </span>
+              <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">
+                V2.6 SECURITY
+              </span>
           </div>
         </div>
 

@@ -58,5 +58,7 @@ model ClinicSettings {
   isBotActive   Boolean  @default(true)
   availability     Json?
   appointmentRules Json?
+  adminUsername    String   @default("admin")
+  adminPassword    String   @default("admin123")
   updatedAt        DateTime @updatedAt
 }

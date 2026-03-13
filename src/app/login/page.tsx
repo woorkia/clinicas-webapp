@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, User, Loader2, ArrowRight } from "lucide-react";
+import { validateAdminLogin } from "@/lib/actions";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -16,13 +17,13 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Simulated login for now - can be expanded to a server action
-    if (username === "admin" && password === "admin123") {
-      // Set a cookie (simplified for demo)
+    const result = await validateAdminLogin(username, password);
+    
+    if (result.success) {
       document.cookie = "auth_session=true; path=/";
       router.push("/admin");
     } else {
-      setError("Credenciales incorrectas. Intenta de nuevo.");
+      setError(result.error || "Credenciales incorrectas. Intenta de nuevo.");
       setIsLoading(false);
     }
   };

@@ -5,16 +5,18 @@ import { ServiceCatalog } from "@/components/automation/ServiceCatalog";
 import { AvailabilityRules } from "@/components/automation/AvailabilityRules";
 import { WebhookLogs } from "@/components/automation/WebhookLogs";
 import { BotSettings } from "@/components/automation/BotSettings";
-import { Settings, Clock, List, Activity } from "lucide-react";
+import { AdminSecurity } from "@/components/automation/AdminSecurity";
+import { Settings, Clock, List, Activity, ShieldCheck } from "lucide-react";
 import { clsx } from "clsx";
 
 export default function AutomationPage() {
-    const [activeTab, setActiveTab] = useState<"services" | "availability" | "logs" | "settings">("services");
+    const [activeTab, setActiveTab] = useState<"services" | "availability" | "logs" | "settings" | "security">("services");
 
     const tabs = [
         { id: "services", label: "Catálogo de Servicios", icon: List },
         { id: "availability", label: "Horarios y Reglas", icon: Clock },
         { id: "settings", label: "Configuración Bot", icon: Settings },
+        { id: "security", label: "Seguridad", icon: ShieldCheck },
         { id: "logs", label: "Logs de Actividad", icon: Activity },
     ] as const;
 
@@ -57,6 +59,7 @@ export default function AutomationPage() {
                 {activeTab === "services" && <ServiceCatalog />}
                 {activeTab === "availability" && <AvailabilityRules />}
                 {activeTab === "settings" && <BotSettings />}
+                {activeTab === "security" && <AdminSecurity />}
                 {activeTab === "logs" && <WebhookLogs />}
             </div>
         </div>

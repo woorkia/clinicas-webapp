@@ -25,6 +25,25 @@ export async function getClinicSettings() {
   }
 }
 
+export async function validateAdminLogin(username: string, password: string) {
+  try {
+    const settings = await prisma.clinicSettings.findFirst();
+    if (!settings) {
+      // Fallback for first run if DB is somehow empty but middleware triggered
+      return { success: username === "admin" && password === "admin123" };
+    }
+    
+    if (settings.adminUsername === username && settings.adminPassword === password) {
+      return { success: true };
+    }
+    
+    return { success: false, error: "Credenciales incorrectas" };
+  } catch (error) {
+    console.error("Error validating login:", error);
+    return { success: false, error: "Error de servidor" };
+  }
+}
+
 export async function updateClinicSettings(data: {
   name?: string;
   address?: string;
@@ -33,6 +52,8 @@ export async function updateClinicSettings(data: {
   isBotActive?: boolean;
   availability?: any;
   appointmentRules?: any;
+  adminUsername?: string;
+  adminPassword?: string;
 }) {
   try {
     const settings = await prisma.clinicSettings.findFirst();
