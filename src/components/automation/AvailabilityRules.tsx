@@ -45,10 +45,10 @@ export function AvailabilityRules() {
 
     useEffect(() => {
         async function loadSettings() {
-            const settings = await getClinicSettings();
+            const settings = await getClinicSettings() as any;
             if (settings) {
                 if (settings.availability) {
-                    setAvailability(settings.availability as Availability);
+                    setAvailability(settings.availability as unknown as Availability);
                 }
                 if (settings.appointmentRules) {
                     setRules(settings.appointmentRules as any);
