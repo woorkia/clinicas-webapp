@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { 
   BarChart3, 
@@ -8,16 +10,20 @@ import {
   LayoutDashboard,
   Bell,
   Search,
-  User
+  User,
+  Plus
 } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+
   const menuItems = [
-    { icon: LayoutDashboard, label: "Dashboard", href: "/admin", active: true },
+    { icon: LayoutDashboard, label: "Dashboard", href: "/admin" },
     { icon: Calendar, label: "Calendario", href: "/admin/calendar" },
     { icon: Settings, label: "Automatización", href: "/admin/automation" },
     { icon: Users, label: "Clientes", href: "/admin/clients" },
@@ -37,20 +43,24 @@ export default function AdminLayout({
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
-          {menuItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                item.active 
-                  ? "bg-blue-50 text-blue-600 font-semibold" 
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              }`}
-            >
-              <item.icon size={20} />
-              <span className="text-sm">{item.label}</span>
-            </Link>
-          ))}
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
+            
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                  isActive 
+                    ? "bg-blue-50 text-blue-600 font-semibold" 
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                }`}
+              >
+                <item.icon size={20} />
+                <span className="text-sm">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="px-4 pt-4 border-t border-gray-100 space-y-1">
