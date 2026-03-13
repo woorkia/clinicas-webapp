@@ -147,8 +147,9 @@ export async function saveClient(data: {
   email?: string | null;
 }) {
   try {
+    let client;
     if (data.id) {
-      await prisma.client.update({
+      client = await prisma.client.update({
         where: { id: data.id },
         data: {
           name: data.name,
@@ -157,7 +158,7 @@ export async function saveClient(data: {
         },
       });
     } else {
-      await prisma.client.create({
+      client = await prisma.client.create({
         data: {
           name: data.name,
           phone: data.phone,
@@ -166,7 +167,7 @@ export async function saveClient(data: {
       });
     }
     revalidatePath("/admin/clients");
-    return { success: true };
+    return { success: true, client };
   } catch (error: any) {
     console.error("Error saving client:", error);
     return { success: false, error: "Error: " + (error.message || String(error)) };
