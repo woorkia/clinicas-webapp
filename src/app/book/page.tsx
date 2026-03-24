@@ -57,10 +57,10 @@ export default function BookingPage() {
     const [viewDate, setViewDate] = useState(new Date());
 
     const settingsData = {
-        name: settings?.name || "Clínica Demo",
+        name: settings?.name || "REDUCTIVA",
         address: settings?.address || "Valencia, Calle Flores n3",
-        logoUrl: settings?.logoUrl || null,
-        headerText: settings?.headerText || "Saca tu mejor sonrisa con nosotros 😎"
+        logoUrl: settings?.logoUrl || "/logo-reductiva.png",
+        headerText: settings?.headerText || "REDUCE TU FIGURA DE 2 A 5 CM AHORA — 3 TRATAMIENTOS EN 1. CUERPO COMPLETO EN 1 SESIÓN"
     };
 
     // --- CALENDAR LOGIC ---
@@ -230,21 +230,37 @@ export default function BookingPage() {
                     )}
 
                     <div>
-                        {/* Logo / Brand */}
-                        <div className="mb-10 mt-6 md:mt-10">
-                            {settingsData.logoUrl ? (
-                                <img src={settingsData.logoUrl} alt={settingsData.name} className="h-12 w-auto mb-4" />
-                            ) : (
-                                <div className="flex items-center gap-2 mb-4">
-                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">C</div>
-                                    <h2 className="text-sm font-bold text-gray-800 uppercase tracking-widest">
-                                        {settingsData.name}
-                                    </h2>
+                        {/* Logo / Brand - REDUCTIVA inline SVG */}
+                        <div className="mb-8 mt-6 md:mt-10">
+                            <div className="mb-5">
+                                <svg viewBox="0 0 220 110" xmlns="http://www.w3.org/2000/svg" className="h-16 w-auto">
+                                    {/* Head circle */}
+                                    <circle cx="110" cy="14" r="11" fill="#4BBFBF"/>
+                                    {/* Left petal */}
+                                    <path d="M110,27 C90,30 72,50 78,68 C83,82 100,84 110,76" fill="#4BBFBF"/>
+                                    {/* Right petal */}
+                                    <path d="M110,27 C130,30 148,50 142,68 C137,82 120,84 110,76" fill="#4BBFBF"/>
+                                    {/* Inner body / negative space handled by overlap */}
+                                    <path d="M110,38 C104,48 102,62 110,72 C118,62 116,48 110,38 Z" fill="white" opacity="0.6"/>
+                                    {/* Brand name */}
+                                    <text x="110" y="100" textAnchor="middle" fill="#4BBFBF" fontSize="14" letterSpacing="5" fontFamily="Georgia, serif" fontWeight="400">REDUCTIVA</text>
+                                </svg>
+                            </div>
+
+                            {/* Header text - styled multi-line */}
+                            <div className="space-y-1">
+                                <p className="text-[11px] font-bold text-[#4BBFBF] uppercase tracking-[0.2em]">Tecnología corporal avanzada</p>
+                                <h1 className="text-2xl font-black text-gray-900 leading-tight uppercase tracking-tight">
+                                    Reduce tu figura<br/>
+                                    <span className="text-[#4BBFBF]">de 2 a 5 cm</span>
+                                </h1>
+                                <div className="pt-2 space-y-1.5">
+                                    <div className="inline-flex items-center gap-2 bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wide">
+                                        3 tratamientos en 1
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Cuerpo completo · 1 sesión</p>
                                 </div>
-                            )}
-                            <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">
-                                {settingsData.headerText}
-                            </h1>
+                            </div>
                         </div>
 
                         {/* Selected Service Summary (if selected) */}
